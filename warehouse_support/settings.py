@@ -5,33 +5,30 @@ from dotenv import load_dotenv
 
 def load_environment():
     """Load environment variables from Streamlit secrets or .env file"""
+    # First try to use Streamlit secrets
     try:
-        # Try to import streamlit and get secrets
         import streamlit as st
-        print("Running in Streamlit Cloud, using secrets...")
-        os.environ['JIRA_SERVER'] = st.secrets['JIRA_SERVER']
-        os.environ['JIRA_USER'] = st.secrets['JIRA_USER']
-        os.environ['JIRA_API_TOKEN'] = st.secrets['JIRA_API_TOKEN']
-        os.environ['JIRA_PROJECT'] = st.secrets['JIRA_PROJECT']
-        os.environ['OPENAI_API_KEY'] = st.secrets['OPENAI_API_KEY']
-        return
+        if st._is_running_with_streamlit:
+            print("Running in Streamlit Cloud, using secrets...")
+            os.environ['JIRA_SERVER'] = st.secrets['JIRA_SERVER']
+            os.environ['JIRA_USER'] = st.secrets['JIRA_USER']
+            os.environ['JIRA_API_TOKEN'] = st.secrets['JIRA_API_TOKEN']
+            os.environ['JIRA_PROJECT'] = st.secrets['JIRA_PROJECT']
+            os.environ['OPENAI_API_KEY'] = st.secrets['OPENAI_API_KEY']
+            return
     except Exception as e:
-        print(f"Not running in Streamlit Cloud or secrets not set: {str(e)}")
-        print("Falling back to .env file...")
+        print("Not running in Streamlit Cloud, will try .env file...")
 
-    # Fall back to .env file
-    env_path = Path(__file__).parent.parent / '.env'
-    env_path_str = str(env_path.absolute())
-
-    if not env_path.exists():
-        raise FileNotFoundError(
-            f".env file not found at {env_path_str} and Streamlit secrets not available.\n"
-            "Please either:\n"
-            "1. Create a .env file for local development, or\n"
-            "2. Set up secrets in Streamlit Cloud"
-        )
-
-    load_dotenv(dotenv_path=env_path_str)
+    # If we're here, we're running locally and need the .env file
+    try:
+        env_path = Path(__file__).parent.parent / '.env'
+        if env_path.exists():
+            print("Loading from .env file...")
+            load_dotenv(dotenv_path=str(env_path.absolute()))
+        else:
+            print("No .env file found for local development.")
+    except Exception as e:
+        print(f"Error loading .env file: {str(e)}")
 
 # Load environment variables
 load_environment()
